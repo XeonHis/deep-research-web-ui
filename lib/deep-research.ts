@@ -97,7 +97,7 @@ export function generateSearchQueries({
             researchGoal: z
               .string()
               .describe(
-                'First talk about the goal of the research that this query is meant to accomplish, then go deeper into how to advance the research once the results are found, mention additional research directions. Be as specific as possible, especially for additional research directions. JSON reserved words should be escaped.',
+                'First talk about the goal of the patent search that this query is meant to accomplish, then go deeper into how to advance the patent development once the results are found, mention additional technical aspects to explore. Be as specific as possible, especially for additional technical aspects. JSON reserved words should be escaped.',
               ),
           })
           .required({ query: true, researchGoal: true }),
@@ -111,9 +111,18 @@ export function generateSearchQueries({
     lp += ` Use ${searchLanguage} for the SERP queries.`
   }
   const prompt = [
-    `Given the following prompt from the user, generate a list of SERP queries to research the topic. Return a maximum of ${numQueries} queries, but feel free to return less if the original prompt is clear. Make sure each query is unique and not similar to each other: <prompt>${query}</prompt>\n\n`,
+    `Given the following invention description from the user, generate a list of SERP queries to research prior art and technical details for this patent. Your queries should be DIVERGENT and CREATIVE to help identify unique aspects of the invention and avoid conflicts with existing patents. 
+    
+    Focus on:
+    1. Novel combinations of technologies or approaches
+    2. Unconventional applications or implementations
+    3. Alternative technical solutions to the same problem
+    4. Edge cases and boundary conditions
+    5. Different industries or fields where similar technology might exist
+    
+    Return a maximum of ${numQueries} queries, but feel free to return less if the original description is clear. Each query should explore a different technical dimension or perspective of the invention: <invention>${query}</invention>\n\n`,
     learnings
-      ? `Here are some learnings from previous research, use them to generate more specific queries: ${learnings.join(
+      ? `Here are some findings from previous searches, use them to generate more specific and divergent queries that explore UNEXPLORED technical aspects and potential novel applications: ${learnings.join(
           '\n',
         )}`
       : '',
@@ -161,27 +170,36 @@ function processSearchResult({
         z.object({
           url: z
             .string()
-            .describe('The source URL from which this learning was extracted'),
+            .describe('The source URL from which this patent information was extracted'),
           learning: z
             .string()
             .describe(
-              'A detailed, information-dense insight extracted from the search results. Include specific entities, metrics, numbers, and dates when available',
+              'A detailed, information-dense technical insight relevant to the patent. Include specific technical details, implementations, materials, methods, processes, and any metrics or measurements when available',
             ),
         }),
       )
       .describe(
-        `Collection of key learnings extracted from search results, each with its source URL. Maximum of ${numLearnings} learnings.`,
+        `Collection of key technical insights for patent development extracted from search results, each with its source URL. Maximum of ${numLearnings} insights.`,
       ),
     followUpQuestions: z
       .array(z.string())
       .describe(
-        `List of relevant follow-up questions to explore the topic further, designed to uncover additional insights. Maximum of ${numFollowUpQuestions} questions.`,
+        `List of relevant follow-up questions to explore technical aspects of the invention further, designed to uncover additional patentable features or prior art. Maximum of ${numFollowUpQuestions} questions.`,
       ),
   })
   const jsonSchema = JSON.stringify(zodToJsonSchema(schema))
   const contents = results.map((item) => trimPrompt(item.content))
   const prompt = [
-    `Given the following contents from a SERP search for the query <query>${query}</query>, extract key learnings from the contents. For each learning, include the source URL. Return a maximum of ${numLearnings} learnings, but feel free to return less if the contents are clear. Make sure each learning is unique and not similar to each other. The learnings should be as detailed and information dense as possible. Include any entities like people, places, companies, products, things, etc in the learnings, as well as any exact metrics, numbers, or dates. Also generate up to ${numFollowUpQuestions} follow-up questions that could help explore this topic further.`,
+    `Given the following contents from a SERP search for the query <query>${query}</query>, extract key technical insights relevant for patent development. 
+    
+    Focus on DIVERGENT and CREATIVE aspects that could make the patent unique:
+    1. Identify technical gaps or limitations in existing solutions that your invention could address
+    2. Extract insights about unconventional applications or implementations
+    3. Note any novel combinations of technologies or approaches
+    4. Identify technical aspects that differentiate from existing patents
+    5. Look for cross-industry applications or unexpected use cases
+    
+    For each insight, include the source URL. Return a maximum of ${numLearnings} insights, but feel free to return less if the contents are clear. Make sure each insight is unique and focuses on different technical aspects. The insights should be as detailed and technically dense as possible. Include specific technical implementations, materials, methods, processes, and any exact metrics, measurements, or specifications. Also generate up to ${numFollowUpQuestions} follow-up questions that could help explore additional patentable features or identify potential prior art.`,
     `<contents>${contents
       .map(
         (content, index) =>
@@ -216,13 +234,30 @@ export function writeFinalReport({
       .join('\n'),
   )
   const _prompt = [
-    `Given the following prompt from the user, write a final report on the topic using the learnings from research. Make it as detailed as possible, aim for 3 or more pages, include ALL the key insights from research.`,
-    `<prompt>${prompt}</prompt>`,
-    `Here are all the learnings from previous research:`,
-    `<learnings>\n${learningsString}\n</learnings>`,
-    `Write the report using Markdown. When citing information, use numbered citations with superscript numbers in square brackets (e.g., [1], [2], [3]). Each citation should correspond to the index of the source in your learnings list. DO NOT include the actual URLs in the report text - only use the citation numbers.`,
+    `Given the following invention description from the user, write a comprehensive patent document using the technical insights gathered from research. 
+    
+    Focus on HIGHLIGHTING THE UNIQUENESS and NOVELTY of the invention:
+    1. Clearly differentiate from existing patents and prior art
+    2. Emphasize novel combinations of technologies or approaches
+    3. Describe unconventional applications or implementations
+    4. Articulate technical advantages over existing solutions
+    5. Include broad claims that protect the core innovation while being specific enough to be defensible
+    
+    Structure the document with proper patent sections including:
+    - Title (concise, broad, descriptive)
+    - Abstract (brief summary of the invention)
+    - Background (problem being solved, limitations of existing solutions)
+    - Summary (overview of the invention and its advantages)
+    - Detailed Description (comprehensive technical details with examples)
+    - Claims (hierarchical structure with independent and dependent claims)
+    
+    Make it as technically detailed as possible, include ALL the key technical insights from research.`,
+    `<invention>${prompt}</invention>`,
+    `Here are all the technical insights from previous research:`,
+    `<insights>\n${learningsString}\n</insights>`,
+    `Write the patent document using Markdown. When citing information, use numbered citations with superscript numbers in square brackets (e.g., [1], [2], [3]). Each citation should correspond to the index of the source in your insights list. DO NOT include the actual URLs in the document text - only use the citation numbers.`,
     languagePrompt(language),
-    `## Deep Research Report`,
+    `## Patent Document`,
   ].join('\n\n')
 
   return streamText({

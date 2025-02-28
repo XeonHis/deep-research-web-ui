@@ -23,11 +23,11 @@ export function generateFeedback({
   const schema = z.object({
     questions: z
       .array(z.string())
-      .describe(`Follow up questions to clarify the research direction`),
+      .describe(`Follow up questions to clarify the patent invention details`),
   })
   const jsonSchema = JSON.stringify(zodToJsonSchema(schema))
   const prompt = [
-    `Given the following query from the user, ask ${numQuestions} follow up questions to clarify the research direction. Return a maximum of ${numQuestions} questions, but feel free to return less if the original query is clear: <query>${query}</query>`,
+    `Given the following invention description from the user, ask ${numQuestions} follow up questions to clarify critical patent details. Focus on technical specifications, unique features, potential applications, and differentiators from existing solutions. Return a maximum of ${numQuestions} questions, but feel free to return less if the original description is comprehensive: <invention>${query}</invention>`,
     `You MUST respond in JSON matching this JSON schema: ${jsonSchema}`,
     languagePrompt(language),
   ].join('\n\n')
